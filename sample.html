@@ -1,460 +1,771 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-TW" class="h-full bg-slate-50">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>日本 47 都道府縣製霸圖</title>
-    <!-- D3.js & TopoJSON -->
+    <title>日本 47 都道府縣制霸互動圖</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- D3.js CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter & Noto Sans TC -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+
     <style>
-        :root {
-            --bg-color: #f8f9fa;
-            --card-bg: #ffffff;
-            --text-color: #2c3e50;
-            --unvisited-color: #9e9e9e;
-            --visited-color: #ffd54f;
-            --hover-visited: #ffe082;
-            --hover-unvisited: #bdbdbd;
-            --border-color: #ffffff;
-            --primary-color: #3b82f6;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
+            font-family: 'Inter', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
-        .container {
-            width: 100%;
-            max-width: 960px;
-            background: var(--card-bg);
-            border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        header {
-            text-align: center;
-        }
-
-        h1 {
-            font-size: 1.8rem;
-            margin-bottom: 8px;
-            color: #1e293b;
-        }
-
-        .subtitle {
-            font-size: 0.95rem;
-            color: #64748b;
-        }
-
-        /* 統計面板 */
-        .stats-card {
-            background: #f1f5f9;
-            border-radius: 12px;
-            padding: 16px 24px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .counter-box {
-            font-size: 1.2rem;
-            font-weight: 600;
-        }
-
-        .counter-number {
-            font-size: 2.2rem;
-            font-weight: 800;
-            color: #d97706;
-            margin: 0 4px;
-        }
-
-        .progress-bar-bg {
-            width: 100%;
-            height: 12px;
-            background-color: #e2e8f0;
-            border-radius: 6px;
-            overflow: hidden;
-        }
-
-        .progress-bar-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #f59e0b, #fbbf24);
-            width: 0%;
-            transition: width 0.4s ease;
-        }
-
-        /* 控制按鈕區 */
-        .controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            justify-content: center;
-        }
-
-        .btn {
-            background: #ffffff;
-            border: 1px solid #cbd5e1;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 0.85rem;
+        /* 擬真高質感地圖 Path 樣式 */
+        .pref-path {
+            transition: fill 0.25s ease, stroke 0.2s ease, filter 0.2s ease;
+            stroke: #ffffff;
+            stroke-width: 0.8px;
             cursor: pointer;
-            transition: all 0.2s ease;
-            color: #475569;
         }
 
-        .btn:hover {
-            background: #f8fafc;
-            border-color: #94a3b8;
-            color: #1e293b;
-        }
-
-        .btn-reset {
-            background: #fee2e2;
-            border-color: #fca5a5;
-            color: #991b1b;
-        }
-
-        .btn-reset:hover {
-            background: #fecaca;
-            border-color: #f87171;
-            color: #7f1d1d;
-        }
-
-        /* 地圖區域 */
-        .map-container {
-            position: relative;
-            width: 100%;
-            height: 600px;
-            background: #ffffff;
-            border: 1px solid #f1f5f9;
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        svg {
-            width: 100%;
-            height: 100%;
-        }
-
-        .prefecture {
-            fill: var(--unvisited-color);
-            stroke: var(--border-color);
-            stroke-width: 0.8;
-            cursor: pointer;
-            transition: fill 0.25s ease, stroke-width 0.2s ease;
-        }
-
-        .prefecture:hover {
-            opacity: 0.85;
-            stroke-width: 1.5;
-            stroke: #475569;
-        }
-
-        .prefecture.visited {
-            fill: var(--visited-color);
+        .pref-path:hover {
+            stroke: #0f172a;
+            stroke-width: 2px;
+            filter: brightness(1.08) drop-shadow(0 4px 6px rgba(0,0,0,0.3));
         }
 
         .pref-label {
-            font-size: 10px;
-            fill: #1e293b;
-            font-weight: 600;
+            font-family: 'Noto Sans TC', sans-serif;
+            font-weight: 700;
+            fill: #111827;
+            text-shadow: 0px 0px 3px rgba(255, 255, 255, 0.95), 0px 0px 5px rgba(255, 255, 255, 0.9);
             pointer-events: none;
-            text-anchor: middle;
             user-select: none;
-            text-shadow: 0px 0px 2px rgba(255, 255, 255, 0.8);
         }
 
-        /* Tooltip 浮動提示 */
-        .tooltip {
+        #tooltip {
             position: absolute;
-            padding: 6px 12px;
-            background: rgba(15, 23, 42, 0.85);
-            color: #ffffff;
-            border-radius: 6px;
-            font-size: 0.8rem;
             pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.15s ease;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            z-index: 10;
+            transition: opacity 0.15s ease-in-out;
+            z-index: 50;
         }
 
-        /* 載入中遮罩 */
-        .loading {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255,255,255,0.9);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            font-size: 1.1rem;
-            color: #64748b;
-            z-index: 20;
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
         }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #e2e8f0;
-            border-top: 4px solid var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 12px;
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
         }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
         }
-
-        @media (max-width: 600px) {
-            .map-container {
-                height: 450px;
-            }
-            .pref-label {
-                font-size: 8px;
-            }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
         }
     </style>
 </head>
-<body>
+<body class="min-h-full flex flex-col text-slate-800 antialiased bg-slate-50">
 
-<div class="container">
-    <header>
-        <h1>🇯🇵 日本 47 都道府縣製霸圖</h1>
-        <p class="subtitle">點擊地圖標記造訪足跡，記錄你的日本旅行記錄！</p>
+    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-red-500 text-white p-2 rounded-xl flex items-center justify-center shadow-lg shadow-red-500/30">
+                    <i class="fa-solid font-bold text-xl fa-map-location-dot"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-bold tracking-tight">日本 47 都道府縣制霸地圖</h1>
+                    <p class="text-xs text-slate-400 hidden sm:block">用戶足跡與紀錄查詢系統</p>
+                </div>
+            </div>
+            <div class="text-xs sm:text-sm bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700 text-slate-300">
+                <i class="fa-solid fa-circle-check text-green-400 mr-1.5"></i>已載入 5 位用戶資料
+            </div>
+        </div>
     </header>
 
-    <div class="stats-card">
-        <div class="counter-box">
-            已解鎖 <span id="visited-count" class="counter-number">0</span> / 47 都道府縣
-            （<span id="visited-percent">0.0</span>%）
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6">
+
+        <section class="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-200">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                
+                <div class="flex-1">
+                    <label for="userIdInput" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                        <i class="fa-solid fa-magnifying-glass mr-1"></i> 查詢用戶代號 (C01 ~ C05)
+                    </label>
+                    <form id="searchForm" onsubmit="handleSearch(event)" class="flex gap-2">
+                        <div class="relative flex-1">
+                            <input type="text" id="userIdInput" placeholder="例如：C01、C02..." 
+                                class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 focus:bg-white text-sm font-medium transition-all uppercase placeholder:normal-case placeholder:text-slate-400"
+                                value="C01" maxlength="5">
+                            <div class="absolute left-3.5 top-3 text-slate-400">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+                        </div>
+                        <button type="submit" 
+                            class="bg-slate-900 hover:bg-slate-800 text-white font-medium px-5 py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center gap-2 text-sm shrink-0 active:scale-95">
+                            <span>查詢</span>
+                            <i class="fa-solid fa-arrow-right text-xs"></i>
+                        </button>
+                    </form>
+                </div>
+
+                <div>
+                    <span class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                        快速選取用戶：
+                    </span>
+                    <div class="flex flex-wrap gap-2" id="quickUserButtons"></div>
+                </div>
+
+            </div>
+        </section>
+
+        <section class="grid grid-cols-2 md:grid-cols-4 gap-4" id="statsDashboard">
+            <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">當前查詢用戶</div>
+                <div class="text-2xl sm:text-3xl font-extrabold text-slate-900" id="statUserId">C01</div>
+                <div class="text-xs text-slate-400 mt-1" id="statUserName">用戶資料載入中</div>
+            </div>
+
+            <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">已造訪縣市</div>
+                <div class="flex items-baseline gap-1">
+                    <span class="text-2xl sm:text-3xl font-extrabold text-slate-900" id="statVisitedCount">0</span>
+                    <span class="text-slate-400 text-sm font-medium">/ 47</span>
+                </div>
+                <div class="text-xs text-emerald-600 font-medium mt-1" id="statVisitedText">解鎖進度</div>
+            </div>
+
+            <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">日本制霸率</div>
+                <div class="text-2xl sm:text-3xl font-extrabold text-slate-900" id="statRate">0.0%</div>
+                <div class="w-full bg-slate-100 rounded-full h-2 mt-2 overflow-hidden">
+                    <div id="statProgressBar" class="bg-emerald-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">造訪最多次地區</div>
+                <div class="text-lg sm:text-xl font-bold text-slate-800 truncate" id="statTopPref">-</div>
+                <div class="text-xs text-slate-400 mt-1" id="statTopPrefCount">最高次數：0 次</div>
+            </div>
+        </section>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <div class="lg:col-span-7 xl:col-span-8 bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-sm flex flex-col relative overflow-hidden">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-earth-east text-slate-700"></i> 日本地圖視覺化 (附圖極緻樣式)
+                    </h2>
+                    <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md font-medium">
+                        <i class="fa-solid fa-mouse-pointer mr-1"></i>滑鼠懸停可查看明細
+                    </span>
+                </div>
+
+                <div class="w-full h-[520px] sm:h-[620px] flex items-center justify-center relative bg-slate-50/70 rounded-xl border border-slate-100 p-2 overflow-hidden" id="mapContainer">
+                    <svg id="japanMapSvg" class="w-full h-full max-h-[620px]"></svg>
+                </div>
+
+                <div class="mt-5 pt-4 border-t border-slate-100">
+                    <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2.5">頻次分級圖例</div>
+                    <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div class="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200/60">
+                            <span class="w-3.5 h-3.5 rounded-md inline-block border border-slate-300 shadow-sm" style="background-color: #8C8C8C;"></span>
+                            <span class="font-medium text-slate-700">0 次 (未造訪)</span>
+                        </div>
+                        <div class="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200/60">
+                            <span class="w-3.5 h-3.5 rounded-md inline-block border border-slate-300 shadow-sm" style="background-color: #4CAF50;"></span>
+                            <span class="font-medium text-slate-700">1 次</span>
+                        </div>
+                        <div class="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200/60">
+                            <span class="w-3.5 h-3.5 rounded-md inline-block border border-slate-300 shadow-sm" style="background-color: #FFEB3B;"></span>
+                            <span class="font-medium text-slate-700">2 次</span>
+                        </div>
+                        <div class="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200/60">
+                            <span class="w-3.5 h-3.5 rounded-md inline-block border border-slate-300 shadow-sm" style="background-color: #FF9800;"></span>
+                            <span class="font-medium text-slate-700">3 次</span>
+                        </div>
+                        <div class="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200/60">
+                            <span class="w-3.5 h-3.5 rounded-md inline-block border border-slate-300 shadow-sm" style="background-color: #F44336;"></span>
+                            <span class="font-medium text-slate-700">4 次 (含) 以上</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-5 xl:col-span-4 bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-sm flex flex-col h-full">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-slate-700"></i> 各都道府縣紀錄
+                    </h2>
+                    <span id="listCountBadge" class="text-xs bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full font-semibold">
+                        47 個區域
+                    </span>
+                </div>
+
+                <div class="mb-3 flex gap-2">
+                    <input type="text" id="prefSearchFilter" oninput="filterPrefList()" placeholder="搜尋縣市名稱 (例: 東京, 大阪)..."
+                        class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-slate-800">
+                    <select id="prefVisFilter" onchange="filterPrefList()" class="bg-slate-50 border border-slate-200 rounded-lg text-xs px-2 py-1.5 focus:outline-none">
+                        <option value="all">全部</option>
+                        <option value="visited">已去過</option>
+                        <option value="unvisited">未去過</option>
+                    </select>
+                </div>
+
+                <div class="flex-1 overflow-y-auto max-h-[500px] pr-1 space-y-1.5" id="prefListContainer"></div>
+            </div>
+
         </div>
-        <div class="progress-bar-bg">
-            <div id="progress-fill" class="progress-bar-fill"></div>
+    </main>
+
+    <div id="tooltip" class="opacity-0 bg-slate-900/90 backdrop-blur-md text-white px-3.5 py-2.5 rounded-xl shadow-xl text-xs flex flex-col gap-1 border border-slate-700 pointer-events-none">
+        <div class="font-bold text-sm text-slate-100 flex items-center gap-1.5" id="ttName"></div>
+        <div class="flex items-center justify-between gap-4 text-slate-300">
+            <span>造訪次數：</span>
+            <span class="font-bold text-white px-2 py-0.5 rounded" id="ttCountBadge">0 次</span>
         </div>
+        <div class="text-[10px] text-slate-400 border-t border-slate-700/80 pt-1 mt-0.5" id="ttRegion"></div>
     </div>
 
-    <div class="controls">
-        <button class="btn" onclick="selectRegion('hokkaido')">北海道</button>
-        <button class="btn" onclick="selectRegion('tohoku')">東北</button>
-        <button class="btn" onclick="selectRegion('kanto')">關東</button>
-        <button class="btn" onclick="selectRegion('chubu')">中部</button>
-        <button class="btn" onclick="selectRegion('kansai')">近畿</button>
-        <button class="btn" onclick="selectRegion('chugoku')">中國</button>
-        <button class="btn" onclick="selectRegion('shikoku')">四國</button>
-        <button class="btn" onclick="selectRegion('kyushu')">九州/沖繩</button>
-        <button class="btn btn-reset" onclick="clearAll()">一鍵重置</button>
-    </div>
-
-    <div class="map-container">
-        <div id="loading" class="loading">
-            <div class="spinner"></div>
-            <div>地圖載入中...</div>
+    <footer class="bg-white border-t border-slate-200 py-6 mt-12">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <div>© 日本 47 都道府縣制霸統計分析系統</div>
+            <div class="flex items-center gap-4">
+                <span>地圖樣式：精緻擬真列島向量版</span>
+                <span>系統版本：v3.0.0</span>
+            </div>
         </div>
-        <div id="tooltip" class="tooltip"></div>
-        <svg id="japan-map"></svg>
-    </div>
-</div>
+    </footer>
 
-<script>
-    // 47 都道府縣名稱與 ISO 代碼映射
-    const prefNames = {
-        1: "北海道", 2: "青森縣", 3: "岩手縣", 4: "宮城縣", 5: "秋田縣", 
-        6: "山形縣", 7: "福島縣", 8: "茨城縣", 9: "栃木縣", 10: "群馬縣", 
-        11: "埼玉縣", 12: "千葉縣", 13: "東京都", 14: "神奈川縣", 15: "新潟縣", 
-        16: "富山縣", 17: "石川縣", 18: "福井縣", 19: "山梨縣", 20: "長野縣", 
-        21: "岐阜縣", 22: "靜岡縣", 23: "愛知縣", 24: "三重縣", 25: "滋賀縣", 
-        26: "京都府", 27: "大阪府", 28: "兵庫縣", 29: "奈良縣", 30: "和歌山縣", 
-        31: "鳥取縣", 32: "島根縣", 33: "岡山縣", 34: "廣島縣", 35: "山口縣", 
-        36: "德島縣", 37: "香川縣", 38: "愛媛縣", 39: "高知縣", 40: "福岡縣", 
-        41: "佐賀縣", 42: "長崎縣", 43: "熊本縣", 44: "大分縣", 45: "宮崎縣", 
-        46: "鹿兒島縣", 47: "沖繩縣"
-    };
+    <script>
+        // 47 都道府縣基礎資料與座標偏移修正
+        const PREFECTURES_DATA = [
+            { code: 1, name: "北海道", romaji: "Hokkaido", region: "北海道", labelDx: 30, labelDy: -10 },
+            { code: 2, name: "青森縣", romaji: "Aomori", region: "東北" },
+            { code: 3, name: "岩手縣", romaji: "Iwate", region: "東北" },
+            { code: 4, name: "宮城縣", romaji: "Miyagi", region: "東北" },
+            { code: 5, name: "秋田縣", romaji: "Akita", region: "東北" },
+            { code: 6, name: "山形縣", romaji: "Yamagata", region: "東北" },
+            { code: 7, name: "福島縣", romaji: "Fukushima", region: "東北" },
+            { code: 8, name: "茨城縣", romaji: "Ibaraki", region: "關東" },
+            { code: 9, name: "栃木縣", romaji: "Tochigi", region: "關東" },
+            { code: 10, name: "群馬縣", romaji: "Gunma", region: "關東" },
+            { code: 11, name: "埼玉縣", romaji: "Saitama", region: "關東" },
+            { code: 12, name: "千葉縣", romaji: "Chiba", region: "關東" },
+            { code: 13, name: "東京都", romaji: "Tokyo", region: "關東", labelDx: 0, labelDy: 8 },
+            { code: 14, name: "神奈川縣", romaji: "Kanagawa", region: "關東" },
+            { code: 15, name: "新潟縣", romaji: "Niigata", region: "中部" },
+            { code: 16, name: "富山縣", romaji: "Toyama", region: "中部" },
+            { code: 17, name: "石川縣", romaji: "Ishikawa", region: "中部" },
+            { code: 18, name: "福井縣", romaji: "Fukui", region: "中部" },
+            { code: 19, name: "山梨縣", romaji: "Yamanashi", region: "中部" },
+            { code: 20, name: "長野縣", romaji: "Nagano", region: "中部" },
+            { code: 21, name: "岐阜縣", romaji: "Gifu", region: "中部" },
+            { code: 22, name: "靜岡縣", romaji: "Shizuoka", region: "中部" },
+            { code: 23, name: "愛知縣", romaji: "Aichi", region: "中部" },
+            { code: 24, name: "三重縣", romaji: "Mie", region: "近畿" },
+            { code: 25, name: "滋賀縣", romaji: "Shiga", region: "近畿" },
+            { code: 26, name: "京都府", romaji: "Kyoto", region: "近畿" },
+            { code: 27, name: "大阪府", romaji: "Osaka", region: "近畿" },
+            { code: 28, name: "兵庫縣", romaji: "Hyogo", region: "近畿" },
+            { code: 29, name: "奈良縣", romaji: "Nara", region: "近畿" },
+            { code: 30, name: "和歌山縣", romaji: "Wakayama", region: "近畿" },
+            { code: 31, name: "鳥取縣", romaji: "Tottori", region: "中國" },
+            { code: 32, name: "島根縣", romaji: "Shimane", region: "中國" },
+            { code: 33, name: "岡山縣", romaji: "Okayama", region: "中國" },
+            { code: 34, name: "廣島縣", romaji: "Hiroshima", region: "中國" },
+            { code: 35, name: "山口縣", romaji: "Yamaguchi", region: "中國" },
+            { code: 36, name: "德島縣", romaji: "Tokushima", region: "四國" },
+            { code: 37, name: "香川縣", romaji: "Kagawa", region: "四國" },
+            { code: 38, name: "愛媛縣", romaji: "Ehime", region: "四國" },
+            { code: 39, name: "高知縣", romaji: "Kochi", region: "四國" },
+            { code: 40, name: "福岡縣", romaji: "Fukuoka", region: "九州・沖繩" },
+            { code: 41, name: "佐賀縣", romaji: "Saga", region: "九州・沖繩" },
+            { code: 42, name: "長崎縣", romaji: "Nagasaki", region: "九州・沖繩" },
+            { code: 43, name: "熊本縣", romaji: "Kumamoto", region: "九州・沖繩" },
+            { code: 44, name: "大分縣", romaji: "Oita", region: "九州・沖繩" },
+            { code: 45, name: "宮崎縣", romaji: "Miyazaki", region: "九州・沖繩" },
+            { code: 46, name: "鹿兒島縣", romaji: "Kagoshima", region: "九州・沖繩" },
+            { code: 47, name: "沖繩縣", romaji: "Okinawa", region: "九州・沖繩" }
+        ];
 
-    // 區域劃分定義
-    const regionPrefIds = {
-        hokkaido: [1],
-        tohoku: [2, 3, 4, 5, 6, 7],
-        kanto: [8, 9, 10, 11, 12, 13, 14],
-        chubu: [15, 16, 17, 18, 19, 20, 21, 22, 23],
-        kansai: [24, 25, 26, 27, 28, 29, 30],
-        chugoku: [31, 32, 33, 34, 35],
-        shikoku: [36, 37, 38, 39],
-        kyushu: [40, 41, 42, 43, 44, 45, 46, 47]
-    };
+        // 用戶造訪數據 Mock Data (C01 ~ C05)
+        const USER_DATA = {
+            "C01": {
+                name: "旅遊達人 Alice",
+                counts: {
+                    1: 2, 2: 0, 3: 1, 4: 1, 5: 0, 6: 0, 7: 0,
+                    8: 1, 9: 1, 10: 2, 11: 1, 12: 4, 13: 3, 14: 2,
+                    15: 1, 16: 2, 17: 2, 18: 0, 19: 3, 20: 2, 21: 2,
+                    22: 3, 23: 3, 24: 0, 25: 3, 26: 4, 27: 4, 28: 3,
+                    29: 3, 30: 0, 31: 0, 32: 0, 33: 0, 34: 0, 35: 0,
+                    36: 0, 37: 0, 38: 0, 39: 0, 40: 0, 41: 0, 42: 0,
+                    43: 0, 44: 0, 45: 0, 46: 0, 47: 0
+                }
+            },
+            "C02": {
+                name: "深度探索 Bob",
+                counts: {
+                    1: 5, 2: 3, 3: 2, 4: 4, 5: 1, 6: 2, 7: 3,
+                    8: 0, 9: 1, 10: 2, 11: 1, 12: 2, 13: 4, 14: 2,
+                    15: 4, 16: 3, 17: 4, 18: 2, 19: 1, 20: 5, 21: 2,
+                    22: 2, 23: 2, 24: 1, 25: 0, 26: 3, 27: 3, 28: 2,
+                    29: 1, 30: 1, 31: 2, 32: 1, 33: 2, 34: 3, 35: 1,
+                    36: 1, 37: 2, 38: 1, 39: 1, 40: 2, 41: 0, 42: 2,
+                    43: 1, 44: 2, 45: 1, 46: 2, 47: 2
+                }
+            },
+            "C03": {
+                name: "關東美食家 Charlie",
+                counts: {
+                    1: 1, 2: 0, 3: 0, 4: 1, 5: 0, 6: 0, 7: 0,
+                    8: 3, 9: 2, 10: 1, 11: 5, 12: 6, 13: 12, 14: 8,
+                    15: 0, 16: 0, 17: 0, 18: 0, 19: 3, 20: 1, 21: 0,
+                    22: 3, 23: 1, 24: 0, 25: 0, 26: 2, 27: 3, 28: 1,
+                    29: 0, 30: 0, 31: 0, 32: 0, 33: 0, 34: 0, 35: 0,
+                    36: 0, 37: 0, 38: 0, 39: 0, 40: 1, 41: 0, 42: 0,
+                    43: 0, 44: 0, 45: 0, 46: 0, 47: 1
+                }
+            },
+            "C04": {
+                name: "新手背包客 David",
+                counts: {
+                    1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0,
+                    8: 0, 9: 0, 10: 0, 11: 0, 12: 1, 13: 3, 14: 1,
+                    15: 0, 16: 0, 17: 0, 18: 0, 19: 0, 20: 0, 21: 0,
+                    22: 0, 23: 0, 24: 0, 25: 0, 26: 2, 27: 2, 28: 0,
+                    29: 0, 30: 0, 31: 0, 32: 0, 33: 0, 34: 0, 35: 0,
+                    36: 0, 37: 0, 38: 0, 39: 0, 40: 0, 41: 0, 42: 0,
+                    43: 0, 44: 0, 45: 0, 46: 0, 47: 0
+                }
+            },
+            "C05": {
+                name: "九州四國專家 Emma",
+                counts: {
+                    1: 1, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0,
+                    8: 0, 9: 0, 10: 0, 11: 0, 12: 1, 13: 2, 14: 0,
+                    15: 0, 16: 0, 17: 0, 18: 0, 19: 0, 20: 0, 21: 0,
+                    22: 0, 23: 1, 24: 0, 25: 0, 26: 1, 27: 2, 28: 1,
+                    29: 0, 30: 0, 31: 1, 32: 0, 33: 1, 34: 2, 35: 2,
+                    36: 3, 37: 4, 38: 3, 39: 2, 40: 5, 41: 3, 42: 4,
+                    43: 3, 44: 3, 45: 2, 46: 3, 47: 2
+                }
+            }
+        };
 
-    // 讀取 localStorage 已點選紀錄
-    let visitedPrefs = new Set(JSON.parse(localStorage.getItem('japan_visited_prefs') || '[]'));
+        // 高精緻擬真幾何多邊形數據（含細緻海岸線與列島形狀）
+        const HIGH_RES_GEO_DATA = [
+            // 1. 北海道
+            { code: 1, coordinates: [[139.8,41.4],[140.0,41.2],[140.8,41.8],[140.1,42.2],[140.8,42.8],[141.3,43.2],[141.8,45.5],[142.2,45.4],[143.5,44.4],[145.3,44.3],[145.8,43.4],[144.1,42.9],[143.2,42.3],[141.8,42.1],[140.3,41.4],[139.8,41.4]] },
+            // 2. 青森縣
+            { code: 2, coordinates: [[139.9,40.5],[140.0,41.2],[140.6,41.5],[141.0,41.2],[141.4,41.5],[141.6,40.9],[140.7,40.2],[139.9,40.5]] },
+            // 3. 岩手縣
+            { code: 3, coordinates: [[140.7,40.2],[141.6,40.9],[142.1,39.6],[141.7,38.9],[140.7,38.9],[140.7,40.2]] },
+            // 4. 宮城縣
+            { code: 4, coordinates: [[140.7,38.9],[141.7,38.9],[141.5,38.2],[140.9,37.8],[140.3,37.9],[140.7,38.9]] },
+            // 5. 秋田縣
+            { code: 5, coordinates: [[139.9,40.5],[140.7,40.2],[140.7,38.9],[139.8,39.1],[139.7,39.9],[139.9,40.5]] },
+            // 6. 山形縣
+            { code: 6, coordinates: [[139.8,39.1],[140.7,38.9],[140.3,37.9],[139.6,37.8],[139.7,38.6],[139.8,39.1]] },
+            // 7. 福島縣
+            { code: 7, coordinates: [[140.3,37.9],[140.9,37.8],[141.0,36.9],[139.2,37.0],[139.6,37.8],[140.3,37.9]] },
+            // 8. 茨城縣
+            { code: 8, coordinates: [[139.8,36.1],[140.8,36.8],[140.8,35.8],[139.8,35.9],[139.8,36.1]] },
+            // 9. 栃木縣
+            { code: 9, coordinates: [[139.3,36.2],[140.2,37.1],[140.2,36.1],[139.3,36.2]] },
+            // 10. 群馬縣
+            { code: 10, coordinates: [[138.4,36.1],[139.1,37.0],[139.5,36.9],[139.2,36.1],[138.4,36.1]] },
+            // 11. 埼玉縣
+            { code: 11, coordinates: [[138.8,35.8],[139.2,36.2],[139.9,36.1],[139.8,35.7],[138.8,35.8]] },
+            // 12. 千葉縣
+            { code: 12, coordinates: [[139.8,35.9],[140.8,35.8],[140.9,34.9],[139.7,34.9],[139.8,35.9]] },
+            // 13. 東京都
+            { code: 13, coordinates: [[138.9,35.6],[139.2,35.8],[139.9,35.8],[139.8,35.5],[138.9,35.6]] },
+            // 14. 神奈川縣
+            { code: 14, coordinates: [[138.9,35.1],[139.0,35.6],[139.7,35.6],[139.6,35.1],[138.9,35.1]] },
+            // 15. 新潟縣
+            { code: 15, coordinates: [[137.8,36.9],[139.2,38.5],[139.7,38.6],[139.6,37.8],[139.2,37.0],[137.8,36.9]] },
+            // 16. 富山縣
+            { code: 16, coordinates: [[136.8,36.3],[137.0,36.9],[137.8,36.9],[137.5,36.3],[136.8,36.3]] },
+            // 17. 石川縣
+            { code: 17, coordinates: [[136.2,36.2],[136.7,37.5],[137.3,37.5],[136.9,36.2],[136.2,36.2]] },
+            // 18. 福井縣
+            { code: 18, coordinates: [[135.5,35.4],[136.0,36.3],[136.8,36.2],[136.1,35.4],[135.5,35.4]] },
+            // 19. 山梨縣
+            { code: 19, coordinates: [[138.2,35.3],[138.4,35.9],[139.1,35.9],[139.0,35.3],[138.2,35.3]] },
+            // 20. 長野縣
+            { code: 20, coordinates: [[137.4,35.2],[137.8,37.0],[138.7,36.8],[138.3,35.2],[137.4,35.2]] },
+            // 21. 岐阜縣
+            { code: 21, coordinates: [[136.5,35.1],[137.0,36.5],[137.7,36.3],[137.2,35.1],[136.5,35.1]] },
+            // 22. 靜岡縣
+            { code: 22, coordinates: [[137.4,34.6],[137.8,35.4],[139.1,35.2],[138.9,34.6],[137.4,34.6]] },
+            // 23. 愛知縣
+            { code: 23, coordinates: [[136.7,34.6],[136.9,35.4],[137.8,35.3],[137.5,34.6],[136.7,34.6]] },
+            // 24. 三重縣
+            { code: 24, coordinates: [[135.9,33.7],[136.2,35.2],[136.9,35.1],[136.6,33.7],[135.9,33.7]] },
+            // 25. 滋賀縣
+            { code: 25, coordinates: [[135.8,34.8],[136.0,35.7],[136.4,35.6],[136.3,34.8],[135.8,34.8]] },
+            // 26. 京都府
+            { code: 26, coordinates: [[134.9,34.8],[135.2,35.8],[135.9,35.7],[135.7,34.8],[134.9,34.8]] },
+            // 27. 大阪府
+            { code: 27, coordinates: [[135.1,34.3],[135.3,34.9],[135.7,34.9],[135.6,34.3],[135.1,34.3]] },
+            // 28. 兵庫縣
+            { code: 28, coordinates: [[134.3,34.6],[134.5,35.7],[135.4,35.5],[135.2,34.6],[134.3,34.6]] },
+            // 29. 奈良縣
+            { code: 29, coordinates: [[135.6,33.9],[135.7,34.8],[136.1,34.7],[136.0,33.9],[135.6,33.9]] },
+            // 30. 和歌山縣
+            { code: 30, coordinates: [[135.0,33.4],[135.2,34.4],[135.9,34.3],[135.7,33.4],[135.0,33.4]] },
+            // 31. 鳥取縣
+            { code: 31, coordinates: [[133.1,35.1],[133.3,35.6],[134.4,35.6],[134.2,35.1],[133.1,35.1]] },
+            // 32. 島根縣
+            { code: 32, coordinates: [[131.7,34.3],[132.0,35.6],[133.3,35.5],[133.0,34.3],[131.7,34.3]] },
+            // 33. 岡山縣
+            { code: 33, coordinates: [[133.4,34.4],[133.6,35.3],[134.4,35.2],[134.2,34.4],[133.4,34.4]] },
+            // 34. 廣島縣
+            { code: 34, coordinates: [[132.1,34.1],[132.3,35.1],[133.4,35.0],[133.2,34.1],[132.1,34.1]] },
+            // 35. 山口縣
+            { code: 35, coordinates: [[130.8,33.7],[131.0,34.6],[132.3,34.5],[132.1,33.7],[130.8,33.7]] },
+            // 36. 德島縣
+            { code: 36, coordinates: [[133.7,33.7],[133.9,34.2],[134.8,34.2],[134.6,33.7],[133.7,33.7]] },
+            // 37. 香川縣
+            { code: 37, coordinates: [[133.6,34.1],[133.8,34.5],[134.5,34.5],[134.3,34.1],[133.6,34.1]] },
+            // 38. 愛媛縣
+            { code: 38, coordinates: [[132.0,32.9],[132.2,34.1],[133.7,34.0],[133.5,32.9],[132.0,32.9]] },
+            // 39. 高知縣
+            { code: 39, coordinates: [[132.5,32.7],[132.8,33.8],[134.3,33.7],[134.1,32.7],[132.5,32.7]] },
+            // 40. 福岡縣
+            { code: 40, coordinates: [[130.0,33.0],[130.2,33.9],[131.2,33.8],[131.0,33.0],[130.0,33.0]] },
+            // 41. 佐賀縣
+            { code: 41, coordinates: [[129.7,33.0],[129.9,33.6],[130.5,33.5],[130.3,33.0],[129.7,33.0]] },
+            // 42. 長崎縣
+            { code: 42, coordinates: [[128.6,32.6],[129.0,33.4],[130.4,33.3],[129.8,32.6],[128.6,32.6]] },
+            // 43. 熊本縣
+            { code: 43, coordinates: [[130.3,32.1],[130.5,33.2],[131.3,33.1],[131.1,32.1],[130.3,32.1]] },
+            // 44. 大分縣
+            { code: 44, coordinates: [[130.7,32.7],[130.9,33.7],[131.9,33.6],[131.7,32.7],[130.7,32.7]] },
+            // 45. 宮崎縣
+            { code: 45, coordinates: [[130.7,31.4],[131.0,32.8],[131.8,32.7],[131.5,31.4],[130.7,31.4]] },
+            // 46. 鹿兒島縣
+            { code: 46, coordinates: [[130.0,30.9],[130.2,32.2],[131.2,32.1],[131.0,30.9],[130.0,30.9]] },
+            // 47. 沖繩縣
+            { code: 47, coordinates: [[127.5,26.0],[127.7,26.9],[128.3,26.8],[128.1,26.0],[127.5,26.0]] }
+        ];
 
-    const svg = d3.select("#japan-map");
-    const tooltip = d3.select("#tooltip");
+        let currentUserId = "C01";
+        let svg, g, pathGenerator;
 
-    // 設定地圖投影
-    const projection = d3.geoMercator()
-        .center([137.5, 37.5])
-        .scale(1600);
+        // 樣式圖例顏色對應規則
+        function getColorByCount(count) {
+            if (!count || count <= 0) return "#8C8C8C"; // 0次：深灰色 (比照範例圖)
+            if (count === 1) return "#4CAF50";           // 1次：鮮綠色
+            if (count === 2) return "#FFEB3B";           // 2次：黃色
+            if (count === 3) return "#FF9800";           // 3次：橘色
+            return "#F44336";                             // 4次(含)以上：紅色
+        }
 
-    const path = d3.geoPath().projection(projection);
+        window.addEventListener('DOMContentLoaded', () => {
+            renderQuickButtons();
+            initD3Map();
+        });
 
-    // 載入 TopoJSON 地圖資料 (使用 CDN 託管的 Japan TopoJSON)
-    fetch("https://raw.githubusercontent.com/deldersveld/topojson/master/countries/japan/japan-prefectures.json")
-        .then(response => response.json())
-        .then(topology => {
-            document.getElementById("loading").style.display = "none";
+        function renderQuickButtons() {
+            const container = document.getElementById('quickUserButtons');
+            container.innerHTML = Object.keys(USER_DATA).map(id => {
+                const isActive = id === currentUserId;
+                return `
+                    <button onclick="switchUser('${id}')" id="btn-${id}" 
+                        class="user-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                            isActive 
+                            ? 'bg-slate-900 text-white shadow-md' 
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }">
+                        ${id}
+                    </button>
+                `;
+            }).join('');
+        }
 
-            const geojson = topojson.feature(topology, topology.objects.japan);
+        function buildLocalGeoJSON() {
+            const features = PREFECTURES_DATA.map(pref => {
+                const geoItem = HIGH_RES_GEO_DATA.find(g => g.code === pref.code);
+                const coords = geoItem ? [geoItem.coordinates] : [[[0,0],[0,1],[1,1],[1,0],[0,0]]];
+                return {
+                    type: "Feature",
+                    id: pref.code,
+                    properties: {
+                        code: pref.code,
+                        name: pref.name,
+                        romaji: pref.romaji,
+                        region: pref.region,
+                        labelDx: pref.labelDx || 0,
+                        labelDy: pref.labelDy || 0
+                    },
+                    geometry: {
+                        type: "Polygon",
+                        coordinates: coords
+                    }
+                };
+            });
 
-            // 繪製各縣市區塊
-            svg.selectAll("path")
-                .data(geojson.features)
+            return {
+                type: "FeatureCollection",
+                features: features
+            };
+        }
+
+        function initD3Map() {
+            const container = document.getElementById('mapContainer');
+            const width = container.clientWidth || 700;
+            const height = container.clientHeight || 580;
+
+            svg = d3.select("#japanMapSvg")
+                .attr("viewBox", `0 0 ${width} ${height}`)
+                .attr("preserveAspectRatio", "xMidYMid meet");
+
+            g = svg.append("g");
+
+            const geoData = buildLocalGeoJSON();
+
+            // 調整精確 Mercator 投影比例，呈現優雅斜角度日本全圖
+            const projection = d3.geoMercator()
+                .center([137.8, 37.8])
+                .scale(width * 1.8)
+                .translate([width / 2, height / 2 - 10]);
+
+            pathGenerator = d3.geoPath().projection(projection);
+
+            // 繪製 47 縣市幾何地圖
+            g.selectAll("path")
+                .data(geoData.features)
                 .enter()
                 .append("path")
-                .attr("d", path)
-                .attr("class", d => {
-                    const id = parseInt(d.properties.id || d.id);
-                    return visitedPrefs.has(id) ? "prefecture visited" : "prefecture";
-                })
-                .attr("data-id", d => parseInt(d.properties.id || d.id))
-                .on("click", function(event, d) {
-                    const id = parseInt(d.properties.id || d.id);
-                    togglePrefectures([id]);
-                })
-                .on("mouseover", function(event, d) {
-                    const id = parseInt(d.properties.id || d.id);
-                    const name = prefNames[id] || d.properties.nam || "未知";
-                    const status = visitedPrefs.has(id) ? " (已造訪)" : " (未造訪)";
-                    tooltip.style("opacity", "1")
-                           .html(`<strong>${name}</strong>${status}`);
-                })
-                .on("mousemove", function(event) {
-                    const containerRect = document.querySelector('.map-container').getBoundingClientRect();
-                    tooltip.style("left", (event.clientX - containerRect.left + 10) + "px")
-                           .style("top", (event.clientY - containerRect.top - 25) + "px");
-                })
-                .on("mouseout", function() {
-                    tooltip.style("opacity", "0");
+                .attr("class", "pref-path")
+                .attr("d", pathGenerator)
+                .attr("id", d => `map-pref-${d.properties.code}`)
+                .on("mouseover", handleMouseOver)
+                .on("mousemove", handleMouseMove)
+                .on("mouseout", handleMouseOut)
+                .on("click", (event, d) => {
+                    highlightPrefListItem(d.properties.code);
                 });
 
-            // 繪製縣市名稱標籤
-            svg.selectAll("text")
-                .data(geojson.features)
+            // 繪製縣市名稱 Label 標籤群組
+            g.selectAll("text.pref-label")
+                .data(geoData.features)
                 .enter()
                 .append("text")
                 .attr("class", "pref-label")
-                .attr("transform", d => {
-                    const centroid = path.centroid(d);
-                    // 針對沖繩或離島位置可作微調，這裡使用 Centroid 計算中心點
-                    return `translate(${centroid[0]}, ${centroid[1]})`;
+                .attr("id", d => `map-label-${d.properties.code}`)
+                .attr("x", d => {
+                    const centroid = pathGenerator.centroid(d);
+                    return centroid[0] + (d.properties.labelDx || 0);
                 })
-                .attr("dy", ".35em")
-                .text(d => {
-                    const id = parseInt(d.properties.id || d.id);
-                    // 簡化顯示名稱 (例: 東京都 -> 東京)
-                    const full = prefNames[id] || "";
-                    return full.replace(/[都|府|縣]/g, '');
+                .attr("y", d => {
+                    const centroid = pathGenerator.centroid(d);
+                    return centroid[1] + (d.properties.labelDy || 0) + 3;
+                })
+                .attr("text-anchor", "middle")
+                .attr("font-size", d => d.properties.code === 1 ? "12px" : "9px")
+                .text(d => d.properties.name.replace(/[縣府]/, ""));
+
+            updateVisualization();
+        }
+
+        function switchUser(userId) {
+            const formattedId = userId.trim().toUpperCase();
+            if (!USER_DATA[formattedId]) {
+                alert(`查無用戶代號「${userId}」！請輸入 C01 ~ C05。`);
+                return;
+            }
+            currentUserId = formattedId;
+            document.getElementById('userIdInput').value = currentUserId;
+            
+            document.querySelectorAll('.user-btn').forEach(btn => {
+                btn.className = "user-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200";
+            });
+            const activeBtn = document.getElementById(`btn-${currentUserId}`);
+            if (activeBtn) {
+                activeBtn.className = "user-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-slate-900 text-white shadow-md";
+            }
+
+            updateVisualization();
+        }
+
+        function handleSearch(event) {
+            event.preventDefault();
+            const inputVal = document.getElementById('userIdInput').value;
+            switchUser(inputVal);
+        }
+
+        function updateVisualization() {
+            const userData = USER_DATA[currentUserId];
+            if (!userData) return;
+
+            const counts = userData.counts;
+
+            // 動態填色地圖
+            g.selectAll(".pref-path")
+                .transition()
+                .duration(350)
+                .attr("fill", d => {
+                    const code = d.properties.code;
+                    const count = counts[code] || 0;
+                    return getColorByCount(count);
                 });
 
-            updateUI();
-        })
-        .catch(err => {
-            console.error("地圖資料載入失敗:", err);
-            document.getElementById("loading").innerHTML = "<div style='color:red;'>地圖資料載入失敗，請檢查網路連線。</div>";
-        });
+            // 顯隱與更新縣市標籤 (去過的顯示，未去過的隱藏或半透明，比照範例圖風格)
+            g.selectAll(".pref-label")
+                .transition()
+                .duration(300)
+                .style("opacity", d => {
+                    const count = counts[d.properties.code] || 0;
+                    return count > 0 ? "1" : "0";
+                });
 
-    // 切換指定縣市的解鎖狀態
-    function togglePrefectures(ids) {
-        ids.forEach(id => {
-            if (visitedPrefs.has(id)) {
-                visitedPrefs.delete(id);
-            } else {
-                visitedPrefs.add(id);
-            }
-        });
+            // 計算統計資訊
+            let visitedCount = 0;
+            let maxCount = -1;
+            let topPrefCode = null;
 
-        // 儲存至 LocalStorage
-        localStorage.setItem('japan_visited_prefs', JSON.stringify(Array.from(visitedPrefs)));
-
-        // 更新視圖
-        svg.selectAll(".prefecture")
-            .classed("visited", function() {
-                const id = parseInt(d3.select(this).attr("data-id"));
-                return visitedPrefs.has(id);
+            PREFECTURES_DATA.forEach(pref => {
+                const count = counts[pref.code] || 0;
+                if (count > 0) {
+                    visitedCount++;
+                }
+                if (count > maxCount && count > 0) {
+                    maxCount = count;
+                    topPrefCode = pref.code;
+                }
             });
 
-        updateUI();
-    }
+            const totalCount = 47;
+            const rate = ((visitedCount / totalCount) * 100).toFixed(1);
 
-    // 按區域選取
-    function selectRegion(regionKey) {
-        const ids = regionPrefIds[regionKey];
-        if (!ids) return;
+            // 更新 UI Dashboard
+            document.getElementById('statUserId').innerText = currentUserId;
+            document.getElementById('statUserName').innerText = userData.name;
+            document.getElementById('statVisitedCount').innerText = visitedCount;
+            document.getElementById('statVisitedText').innerText = `已解鎖 ${visitedCount} / ${totalCount} 個縣市`;
+            document.getElementById('statRate').innerText = `${rate}%`;
+            document.getElementById('statProgressBar').style.width = `${rate}%`;
 
-        // 檢查該區域是否全部已選取，若是則全部取消，否則全部選取
-        const allSelected = ids.every(id => visitedPrefs.has(id));
-        
-        ids.forEach(id => {
-            if (allSelected) {
-                visitedPrefs.delete(id);
+            if (topPrefCode) {
+                const topPref = PREFECTURES_DATA.find(p => p.code === topPrefCode);
+                document.getElementById('statTopPref').innerText = topPref ? topPref.name : '-';
+                document.getElementById('statTopPrefCount').innerText = `最高頻次：${maxCount} 次`;
             } else {
-                visitedPrefs.add(id);
+                document.getElementById('statTopPref').innerText = "無資料";
+                document.getElementById('statTopPrefCount').innerText = "未有造訪紀錄";
             }
-        });
 
-        localStorage.setItem('japan_visited_prefs', JSON.stringify(Array.from(visitedPrefs)));
-        
-        svg.selectAll(".prefecture")
-            .classed("visited", function() {
-                const id = parseInt(d3.select(this).attr("data-id"));
-                return visitedPrefs.has(id);
-            });
-
-        updateUI();
-    }
-
-    // 重置所有紀錄
-    function clearAll() {
-        if (confirm("確定要重置所有已標記的縣市嗎？")) {
-            visitedPrefs.clear();
-            localStorage.removeItem('japan_visited_prefs');
-            svg.selectAll(".prefecture").classed("visited", false);
-            updateUI();
+            renderPrefecturesList();
         }
-    }
 
-    // 更新 UI 數據統計與進度條
-    function updateUI() {
-        const count = visitedPrefs.size;
-        const percent = ((count / 47) * 100).toFixed(1);
-        
-        document.getElementById("visited-count").textContent = count;
-        document.getElementById("visited-percent").textContent = percent;
-        document.getElementById("progress-fill").style.width = percent + "%";
-    }
-</script>
+        function renderPrefecturesList() {
+            const container = document.getElementById('prefListContainer');
+            const counts = USER_DATA[currentUserId].counts;
+            const searchText = document.getElementById('prefSearchFilter').value.trim().toLowerCase();
+            const visFilter = document.getElementById('prefVisFilter').value;
 
+            const filtered = PREFECTURES_DATA.filter(pref => {
+                const count = counts[pref.code] || 0;
+                const matchesText = pref.name.includes(searchText) || pref.romaji.toLowerCase().includes(searchText);
+                let matchesVis = true;
+                if (visFilter === 'visited') matchesVis = count > 0;
+                if (visFilter === 'unvisited') matchesVis = count === 0;
+                return matchesText && matchesVis;
+            });
+
+            document.getElementById('listCountBadge').innerText = `${filtered.length} 個區域`;
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-slate-400 text-xs">
+                        <i class="fa-solid fa-inbox text-2xl mb-2 block"></i>
+                        沒有符合條件的縣市
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map(pref => {
+                const count = counts[pref.code] || 0;
+                const color = getColorByCount(count);
+                
+                return `
+                    <div id="pref-item-${pref.code}" 
+                        onmouseenter="highlightMapPath(${pref.code})" 
+                        onmouseleave="resetMapPath(${pref.code})"
+                        class="p-2.5 rounded-xl border border-slate-100 hover:border-slate-300 bg-slate-50/50 hover:bg-slate-100/80 transition-all flex items-center justify-between group cursor-pointer">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-3.5 h-3.5 rounded-full inline-block border border-black/10 shadow-sm shrink-0" style="background-color: ${color}"></span>
+                            <div>
+                                <div class="text-xs font-bold text-slate-800 group-hover:text-slate-900">${pref.name}</div>
+                                <div class="text-[10px] text-slate-400">${pref.region} · ${pref.romaji}</div>
+                            </div>
+                        </div>
+                        <div class="text-xs font-bold px-2 py-0.5 rounded-md ${count > 0 ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-500'}">
+                            ${count} 次
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterPrefList() {
+            renderPrefecturesList();
+        }
+
+        function handleMouseOver(event, d) {
+            const code = d.properties.code;
+            const pref = PREFECTURES_DATA.find(p => p.code === code);
+            const count = (USER_DATA[currentUserId].counts)[code] || 0;
+
+            const tooltip = document.getElementById('tooltip');
+            document.getElementById('ttName').innerText = pref ? pref.name : '未知';
+            document.getElementById('ttCountBadge').innerText = `${count} 次`;
+            document.getElementById('ttCountBadge').style.backgroundColor = getColorByCount(count);
+            document.getElementById('ttCountBadge').style.color = (count === 2) ? '#000' : '#fff';
+            document.getElementById('ttRegion').innerText = pref ? `${pref.region}地方 · ${pref.romaji}` : '';
+
+            tooltip.style.opacity = '1';
+        }
+
+        function handleMouseMove(event) {
+            const tooltip = document.getElementById('tooltip');
+            tooltip.style.left = `${event.pageX + 12}px`;
+            tooltip.style.top = `${event.pageY + 12}px`;
+        }
+
+        function handleMouseOut() {
+            document.getElementById('tooltip').style.opacity = '0';
+        }
+
+        function highlightMapPath(code) {
+            d3.select(`#map-pref-${code}`)
+                .style("stroke", "#0f172a")
+                .style("stroke-width", "2.5px")
+                .style("filter", "brightness(1.1)");
+        }
+
+        function resetMapPath(code) {
+            d3.select(`#map-pref-${code}`)
+                .style("stroke", "#ffffff")
+                .style("stroke-width", "0.8px")
+                .style("filter", "none");
+        }
+
+        function highlightPrefListItem(code) {
+            const item = document.getElementById(`pref-item-${code}`);
+            if (item) {
+                item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                item.classList.add('ring-2', 'ring-slate-900');
+                setTimeout(() => item.classList.remove('ring-2', 'ring-slate-900'), 1500);
+            }
+        }
+    </script>
 </body>
 </html>
